@@ -8,18 +8,79 @@ output:
 
 ## Loading and preprocessing the data
 
-
-
+```{r, echo = TRUE}
+dfSteps = read.csv("activity.csv")
+```
 ## What is mean total number of steps taken per day?
+
+```{r, echo = TRUE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+
+stepsPerDay = dfSteps %>% tbl_dt() %>% 
+              group_by(date) %>% 
+              summarize("Total" = sum(steps))
+
+graph = ggplot(data = stepsPerDay, aes(Total))
+graph = graph + geom_histogram(col = "black", fill = "red", alpha = 0.3, na.rm = TRUE)
+graph = graph + labs(x = "Steps Per Day")
+graph = graph + labs(title = "Histogram of the Total Number of Steps Taken Each Day")
+graph
+
+mnSteps = mean(stepsPerDay$Total, na.rm = TRUE)
+
+medSteps = median(stepsPerDay$Total, na.rm = TRUE)
+```
+The mean of the number of steps taken per day is **`r format(mnSteps, nsmall = 2, big.mark = ",")`**.
+
+The median of the number of steps taken per day is **`r format(medSteps, nsmall = 2, big.mark = ",")`**.
 
 
 
 ## What is the average daily activity pattern?
 
+```{r, echo = TRUE}
+StepsAverage = dfSteps %>% tbl_dt() %>% 
+               group_by(interval) %>% 
+               summarize("Average" = mean(steps, na.rm = TRUE))
 
+graph = ggplot(data = StepsAverage, aes(x = interval, y = Average))
+graph = graph + geom_line()
+graph = graph + labs(title = "Average Number of Steps Taken Throughout the Day")
+graph
+
+intervalMaxSteps = StepsAverage$interval[which.max(StepsAverage$Average)]
+```
+
+The 5-minute interval that, on average, contains the maximum number of steps is **`r intervalMaxSteps`.**
 
 ## Imputing missing values
 
+```{r, echo = TRUE}
+sum(is.na(dfSteps$steps))
+
+#2
+
+dfStepsFilled = dfSteps
+
+for (i in 1 : nrow(dfStepsFilled)) {
+    if (is.na(dfStepsFilled[i, "steps"])) {
+        dfStepsFilled[i, "steps"] = 
+            filter(StepsAverage, interval == dfStepsFilled[i, "interval"])$Average
+        
+    }
+}
+
+stepsPerDayFilled = dfStepsFilled %>% tbl_dt() %>% 
+                    group_by(date) %>% 
+                    summarize("Total" = sum(steps))
+
+qplot(Total, data = stepsPerDayFilled, geom = "histogram", xlab = "Steps Per Day")
+
+
+
+
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
